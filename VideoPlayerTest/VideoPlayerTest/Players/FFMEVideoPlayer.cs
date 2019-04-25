@@ -1,12 +1,136 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Unosquare.FFME;
 
 namespace VideoPlayerTest.Players
 {
-    class FFMEVideoPlayer
+    public class FFMEVideoPlayer : VideoPlayerBase
     {
+        private readonly MediaElement _mediaElement;
+        private TaskCompletionSource<bool> _loadTcs;
+        public override bool IsPlaying => _mediaElement.IsPlaying;
+
+        public override TimeSpan Position
+        {
+            get
+            {
+                if (IsMediaLoaded) return _mediaElement.Position;
+                return TimeSpan.Zero;
+            }
+            set
+            {
+                if (IsMediaLoaded && value <= Duration) _mediaElement.Position = value;
+            }
+        }
+
+        public override TimeSpan Duration
+        {
+            get
+            {
+                if (IsMediaLoaded && _mediaElement.NaturalDuration.HasValue) return _mediaElement.NaturalDuration.Value;
+                return TimeSpan.Zero;
+            }
+        }
+
+        public FFMEVideoPlayer()
+        {
+            Library.FFmpegDirectory = @"C:\ffmpeg";
+            _mediaElement = new MediaElement
+            {
+                LoadedBehavior = Unosquare.FFME.Common.MediaPlaybackState.Manual,
+                UnloadedBehavior = Unosquare.FFME.Common.MediaPlaybackState.Manual,
+                ScrubbingEnabled = true,
+            };
+            Content = _mediaElement;
+
+            _mediaElement.MediaOpened += MediaElement_MediaOpened;
+            _mediaElement.MediaFailed += MediaElement_MediaFailed;
+            _mediaElement.MediaEnded += MediaElement_MediaEnded;
+        }
+
+        public override void DisposePlayer()
+        {
+            _mediaElement.MediaOpened -= MediaElement_MediaOpened;
+            _mediaElement.MediaFailed -= MediaElement_MediaFailed;
+            _mediaElement.MediaEnded -= MediaElement_MediaEnded;
+            _mediaElement.Close();
+        }
+
+        public override Task<bool> LoadMedia(string filePath)
+        {
+            UnloadMedia();
+            _loadTcs = null;
+            _loadTcs = new TaskCompletionSource<bool>();
+
+            _mediaElement.Source = new Uri(filePath);
+            return _loadTcs.Task;
+        }
+
+        public override void UnloadMedia()
+        {
+            if (IsMediaLoaded)
+            {
+                IsMediaLoaded = false;
+                _mediaElement.Stop();
+                _mediaElement.Source = null;
+            }
+        }
+
+        public override void Play()
+        {
+            if (!IsMediaLoaded) return;
+            if (!IsPlaying)
+            {
+                _mediaElement.Play();
+            }
+        }
+
+        public override void Pause()
+        {
+            if (!IsMediaLoaded) return;
+            if (IsPlaying)
+            {
+                _mediaElement.Pause();
+            }
+        }
+
+        public async override Task SeekAsync(TimeSpan time)
+        {
+            if (!IsMediaLoaded) return;
+            
+            // HACK, maybe will work
+            //await _mediaElement.Pause();
+            //await Dispatcher.BeginInvoke(new Action(() => Position = time));
+            //await Task.Delay(50);
+            //await _mediaElement.Play();
+
+            if (!await _mediaElement.Seek(time))
+            {
+                Console.WriteLine("Seek Failed");
+            }
+        }
+
+        private void MediaElement_MediaOpened(object sender, Unosquare.FFME.Common.MediaOpenedEventArgs e)
+        {
+            if (_loadTcs != null && _mediaElement.HasVideo)
+            {
+                Position = TimeSpan.Zero;
+                _loadTcs.TrySetResult(true);
+                _loadTcs = null;
+                IsMediaLoaded = true;
+            }
+        }
+
+        private void MediaElement_MediaFailed(object sender, Unosquare.FFME.Common.MediaFailedEventArgs e)
+        {
+            _loadTcs?.TrySetResult(false);
+            _loadTcs = null;
+            IsMediaLoaded = false;
+        }
+
+        private void MediaElement_MediaEnded(object sender, EventArgs e)
+        {
+            Pause();
+        }
     }
 }
