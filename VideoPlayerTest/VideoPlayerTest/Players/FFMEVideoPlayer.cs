@@ -43,6 +43,7 @@ namespace VideoPlayerTest.Players
             };
             Content = _mediaElement;
 
+            _mediaElement.MediaOpening += MediaElement_MediaOpening;
             _mediaElement.MediaOpened += MediaElement_MediaOpened;
             _mediaElement.MediaFailed += MediaElement_MediaFailed;
             _mediaElement.MediaEnded += MediaElement_MediaEnded;
@@ -53,6 +54,7 @@ namespace VideoPlayerTest.Players
             _mediaElement.MediaOpened -= MediaElement_MediaOpened;
             _mediaElement.MediaFailed -= MediaElement_MediaFailed;
             _mediaElement.MediaEnded -= MediaElement_MediaEnded;
+            _mediaElement.MediaOpening -= MediaElement_MediaOpening;
             _mediaElement.Close();
         }
 
@@ -97,17 +99,20 @@ namespace VideoPlayerTest.Players
         public async override Task SeekAsync(TimeSpan time)
         {
             if (!IsMediaLoaded) return;
-            
+
             // HACK, maybe will work
             //await _mediaElement.Pause();
             //await Dispatcher.BeginInvoke(new Action(() => Position = time));
-            //await Task.Delay(50);
+            //await Task.Delay(20);
             //await _mediaElement.Play();
 
-            if (!await _mediaElement.Seek(time))
-            {
-                Console.WriteLine("Seek Failed");
-            }
+            await _mediaElement.Seek(time);
+            Position = time;
+        }
+
+        private void MediaElement_MediaOpening(object sender, Unosquare.FFME.Common.MediaOpeningEventArgs e)
+        {
+            e.Options.IsFluidSeekingDisabled = true;
         }
 
         private void MediaElement_MediaOpened(object sender, Unosquare.FFME.Common.MediaOpenedEventArgs e)
