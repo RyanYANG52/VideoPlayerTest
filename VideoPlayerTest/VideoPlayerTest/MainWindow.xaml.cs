@@ -1,9 +1,11 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using VideoPlayerTest.Players;
 
 namespace VideoPlayerTest
@@ -14,6 +16,7 @@ namespace VideoPlayerTest
         private TimeSpan _watchStartTime;
         private readonly VideoPlayerBase _player;
         private TimeSpan WatchTime => _watchStartTime + _watch.Elapsed;
+        private DispatcherTimer _testTimer;
 
         public MainWindow()
         {
@@ -23,6 +26,12 @@ namespace VideoPlayerTest
             //_player = new WpfVideoPlayer();
             _player = new FFMEVideoPlayer();
             PlayerHost.Content = _player;
+            Loaded += MainWindow_Loaded;
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            await LoadMedia(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\SampleVideo_1280x720_30mb.mp4"));
         }
 
         private async void LoadBtn_Click(object sender, RoutedEventArgs e)
@@ -31,14 +40,12 @@ namespace VideoPlayerTest
             {
                 Filter = "Video Files | *.mp4; *.avi; *.mkv; *.mpeg; *.wmv",
             };
-            if (dialog.ShowDialog() == true && await _player.LoadMedia(dialog.FileName))
+            if (dialog.ShowDialog() == true)
             {
-                PositionSlider.Minimum = 0;
-                PositionSlider.Maximum = _player.Duration.TotalSeconds;
-                PositionSlider.IsEnabled = true;
-                DurationText.Text = _player.Duration.ToString(@"hh\:mm\:ss\.fff");
+                await LoadMedia(dialog.FileName);
             }
         }
+
 
         private void PlayBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -89,24 +96,27 @@ namespace VideoPlayerTest
 
             if (_watch.IsRunning) // seek while playing
             {
-                PauseWatch();
-                _watchStartTime = time;
-                UpdateUI(WatchTime, TimeSpan.Zero);
-                Stopwatch sw = Stopwatch.StartNew();
-                await _player.SeekAsync(time); //using ffme Position do not change immediately after seek
-                sw.Stop();                
-                Console.WriteLine($"OFFSET: {time - _player.Position} SEEK Duration:{sw.Elapsed}");
-                StartWatch();
+                await SeekAsync(time);
             }
             else // seek while paused
             {
                 _watchStartTime = time;
                 _player.Position = _watchStartTime;
-               // await _player.SeekAsync(time);
-               // Console.WriteLine($"OFFSET: {time - _player.Position}");
+                // await _player.SeekAsync(time);
+                // Console.WriteLine($"OFFSET: {time - _player.Position}");
                 UpdateUI(WatchTime, TimeSpan.Zero);
             }
             e.Handled = true;
+        }
+        private async Task LoadMedia(string filePath)
+        {
+            if (await _player.LoadMedia(filePath))
+            {
+                PositionSlider.Minimum = 0;
+                PositionSlider.Maximum = _player.Duration.TotalSeconds;
+                PositionSlider.IsEnabled = true;
+                DurationText.Text = _player.Duration.ToString(@"hh\:mm\:ss\.fff");
+            }
         }
 
         private void Play()
@@ -123,6 +133,18 @@ namespace VideoPlayerTest
             PauseWatch();
             PlayBtn.Content = "Play";
         }
+        private async Task SeekAsync(TimeSpan time)
+        {
+            PauseWatch();
+            _watchStartTime = time;
+            UpdateUI(WatchTime, TimeSpan.Zero);
+            Stopwatch sw = Stopwatch.StartNew();
+            await _player.SeekAsync(time); //using ffme Position do not change immediately after seek
+            sw.Stop();
+            Console.WriteLine($"SEEK Duration:{sw.Elapsed}");
+            StartWatch();
+        }
+
 
         private void UpdateUI(TimeSpan time, TimeSpan offsetTime)
         {
@@ -145,6 +167,39 @@ namespace VideoPlayerTest
             if (!_watch.IsRunning)
             {
                 _watch.Start();
+            }
+        }
+
+        private void SeekTestBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (_watch.IsRunning)
+            {
+                _testTimer.Tick -= TestTimer_Tick;
+                _testTimer.Stop();
+                Pause();
+            }
+            else
+            {
+                Play();
+                _testTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                _testTimer.Tick += TestTimer_Tick;
+                _testTimer.Start();
+            }
+        }
+
+        private async void TestTimer_Tick(object sender, EventArgs e)
+        {
+            var sec = DateTime.Now.Second;
+            if (sec % 2 == 0)
+            {
+                await SeekAsync(TimeSpan.FromSeconds(10));
+            }
+            else
+            {
+                await SeekAsync(TimeSpan.FromSeconds(30));
             }
         }
     }

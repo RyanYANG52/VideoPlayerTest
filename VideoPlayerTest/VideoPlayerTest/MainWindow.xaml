@@ -25,6 +25,7 @@
             </StackPanel.Resources>
             <Button x:Name="LoadBtn" Click="LoadBtn_Click" Content="Load"/>
             <Button x:Name="PlayBtn" Click="PlayBtn_Click" Content="Play"/>
+            <Button x:Name="SeekTestBtn" Click="SeekTestBtn_Click" Content="Seek Test"/>
             <TextBlock Text="Durtion:"/>
             <TextBlock x:Name="DurationText"/>
             <TextBlock Text="Position:"/>
