@@ -174,8 +174,12 @@ namespace VideoPlayerTest
         {
             if (_watch.IsRunning)
             {
-                _testTimer.Tick -= TestTimer_Tick;
-                _testTimer.Stop();
+                if(_testTimer!= null)
+                {
+                    _testTimer.Tick -= TestTimer_Tick;
+                    _testTimer.Stop();
+                    _testTimer = null;
+                }
                 Pause();
             }
             else
@@ -183,7 +187,7 @@ namespace VideoPlayerTest
                 Play();
                 _testTimer = new DispatcherTimer
                 {
-                    Interval = TimeSpan.FromSeconds(1)
+                    Interval = TimeSpan.FromSeconds(0.5)
                 };
                 _testTimer.Tick += TestTimer_Tick;
                 _testTimer.Start();
@@ -192,8 +196,8 @@ namespace VideoPlayerTest
 
         private async void TestTimer_Tick(object sender, EventArgs e)
         {
-            var sec = DateTime.Now.Second;
-            if (sec % 2 == 0)
+            var milliSec = DateTime.Now.Millisecond;
+            if (milliSec >= 500)
             {
                 await SeekAsync(TimeSpan.FromSeconds(10));
             }

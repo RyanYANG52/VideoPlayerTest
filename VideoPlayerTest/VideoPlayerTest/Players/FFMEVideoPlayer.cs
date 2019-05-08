@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Windows;
 using Unosquare.FFME;
 
 namespace VideoPlayerTest.Players
@@ -27,18 +28,18 @@ namespace VideoPlayerTest.Players
         {
             get
             {
-                if (IsMediaLoaded && _mediaElement.NaturalDuration.HasValue) return _mediaElement.NaturalDuration.Value;
+                if (IsMediaLoaded && _mediaElement.NaturalDuration.HasTimeSpan) return _mediaElement.NaturalDuration.TimeSpan;
                 return TimeSpan.Zero;
             }
         }
 
         public FFMEVideoPlayer()
         {
-            Library.FFmpegDirectory = @"C:\ffmpeg";
+            MediaElement.FFmpegDirectory = @"C:\ffmpeg";
             _mediaElement = new MediaElement
             {
-                LoadedBehavior = Unosquare.FFME.Common.MediaPlaybackState.Manual,
-                UnloadedBehavior = Unosquare.FFME.Common.MediaPlaybackState.Manual,
+                LoadedBehavior = System.Windows.Controls.MediaState.Manual,
+                UnloadedBehavior = System.Windows.Controls.MediaState.Manual,
                 ScrubbingEnabled = true,
             };
             Content = _mediaElement;
@@ -101,21 +102,21 @@ namespace VideoPlayerTest.Players
             if (!IsMediaLoaded) return;
 
             // HACK, maybe will work
-            //await _mediaElement.Pause();
-            //await Dispatcher.BeginInvoke(new Action(() => Position = time));
-            //await Task.Delay(20);
-            //await _mediaElement.Play();
+            await _mediaElement.Pause();
+            await Dispatcher.BeginInvoke(new Action(() => Position = time));
+            await Task.Delay(20);
+            await _mediaElement.Play();
 
-            await _mediaElement.Seek(time);
-            Position = time; // To change Position property immediately after Seek
+            //await _mediaElement.Seek(time);
+            //Position = time; // To change Position property immediately after Seek
         }
 
-        private void MediaElement_MediaOpening(object sender, Unosquare.FFME.Common.MediaOpeningEventArgs e)
+        private void MediaElement_MediaOpening(object sender, Unosquare.FFME.Events.MediaOpeningEventArgs e)
         {
-            e.Options.IsFluidSeekingDisabled = true;
+            //e.Options.IsFluidSeekingDisabled = true;
         }
 
-        private void MediaElement_MediaOpened(object sender, Unosquare.FFME.Common.MediaOpenedEventArgs e)
+        private void MediaElement_MediaOpened(object sender, Unosquare.FFME.Events.MediaOpenedRoutedEventArgs e)
         {
             if (_loadTcs != null && _mediaElement.HasVideo)
             {
@@ -126,7 +127,7 @@ namespace VideoPlayerTest.Players
             }
         }
 
-        private void MediaElement_MediaFailed(object sender, Unosquare.FFME.Common.MediaFailedEventArgs e)
+        private void MediaElement_MediaFailed(object sender, ExceptionRoutedEventArgs e)
         {
             _loadTcs?.TrySetResult(false);
             _loadTcs = null;
