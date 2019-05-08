@@ -108,6 +108,7 @@ namespace VideoPlayerTest
             }
             e.Handled = true;
         }
+
         private async Task LoadMedia(string filePath)
         {
             if (await _player.LoadMedia(filePath))
@@ -140,14 +141,13 @@ namespace VideoPlayerTest
             PauseWatch();
             _watchStartTime = time;
             UpdateUI(WatchTime, TimeSpan.Zero);
-            Stopwatch sw = Stopwatch.StartNew();
+            Stopwatch sw = Stopwatch.StartNew();            
             await _player.SeekAsync(time); //using ffme Position do not change immediately after seek
             message += $" SEEK Duration:{sw.Elapsed}";
             sw.Stop();
             StartWatch();
             Console.WriteLine(message);
         }
-
 
         private void UpdateUI(TimeSpan time, TimeSpan offsetTime)
         {

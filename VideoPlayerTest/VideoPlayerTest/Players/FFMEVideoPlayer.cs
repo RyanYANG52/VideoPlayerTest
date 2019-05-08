@@ -105,9 +105,11 @@ namespace VideoPlayerTest.Players
             //await Dispatcher.BeginInvoke(new Action(() => Position = time));
             //await Task.Delay(20);
             //await _mediaElement.Play();
-
+            //await _mediaElement.Pause();
             await _mediaElement.Seek(time);
             Position = time; // To change Position property immediately after Seek
+                             //
+            //await _mediaElement.Play();
         }
 
         private void MediaElement_MediaOpening(object sender, Unosquare.FFME.Common.MediaOpeningEventArgs e)
