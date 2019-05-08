@@ -133,16 +133,19 @@ namespace VideoPlayerTest
             PauseWatch();
             PlayBtn.Content = "Play";
         }
+
         private async Task SeekAsync(TimeSpan time)
         {
+            var message = $"Offset Time:{OffsetText.Text}";
             PauseWatch();
             _watchStartTime = time;
             UpdateUI(WatchTime, TimeSpan.Zero);
             Stopwatch sw = Stopwatch.StartNew();
             await _player.SeekAsync(time); //using ffme Position do not change immediately after seek
+            message += $" SEEK Duration:{sw.Elapsed}";
             sw.Stop();
-            Console.WriteLine($"SEEK Duration:{sw.Elapsed}");
             StartWatch();
+            Console.WriteLine(message);
         }
 
 
