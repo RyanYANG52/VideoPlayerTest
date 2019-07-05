@@ -102,13 +102,41 @@ namespace VideoPlayerTest.Players
             if (!IsMediaLoaded) return;
 
             // HACK, maybe will work
-            await _mediaElement.Pause();
-            await Dispatcher.BeginInvoke(new Action(() => Position = time));
-            await Task.Delay(20);
-            await _mediaElement.Play();
+            //await _mediaElement.Pause();
+            //await Dispatcher.BeginInvoke(new Action(() => Position = time));
+            //await Task.Delay(20);
+            //await _mediaElement.Play();
 
             //await _mediaElement.Seek(time);
             //Position = time; // To change Position property immediately after Seek
+            _isSeeking = false;
+            Play();
+            Position = time;
+            await SeekTask(time);
+        }
+
+        private bool _isSeeking;
+        private async Task SeekTask(TimeSpan time)
+        {
+            _isSeeking = true;
+            for (int i = 0; i < 20; i++)
+            {
+                if (!_isSeeking)
+                {
+                    //Console.WriteLine("Seek Canceled");
+                    return;
+                }
+                if (Position != time)
+                {
+                    _isSeeking = false;
+                    //Console.WriteLine("Seek Success!1!");
+                    return;
+                }
+
+                await Task.Delay(10);
+            }
+            _isSeeking = false;
+            //Console.WriteLine("Seek Ended");
         }
 
         private void MediaElement_MediaOpening(object sender, Unosquare.FFME.Events.MediaOpeningEventArgs e)
