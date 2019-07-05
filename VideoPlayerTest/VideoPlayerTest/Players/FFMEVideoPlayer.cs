@@ -14,7 +14,7 @@ namespace VideoPlayerTest.Players
         {
             get
             {
-                if (IsMediaLoaded) return _mediaElement.Position;
+                if (IsMediaLoaded || _mediaElement.ActualPosition.HasValue) return _mediaElement.ActualPosition.Value;
                 return TimeSpan.Zero;
             }
             set
@@ -56,15 +56,17 @@ namespace VideoPlayerTest.Players
             _mediaElement.MediaEnded -= MediaElement_MediaEnded;
             _mediaElement.MediaOpening -= MediaElement_MediaOpening;
             _mediaElement.Close();
+            _mediaElement.Dispose();
         }
 
         public override Task<bool> LoadMedia(string filePath)
         {
-            UnloadMedia();
+            //UnloadMedia();
             _loadTcs = null;
             _loadTcs = new TaskCompletionSource<bool>();
 
-            _mediaElement.Source = new Uri(filePath);
+            //_mediaElement.Source = new Uri(filePath);
+            _mediaElement.Open(new Uri(filePath));
             return _loadTcs.Task;
         }
 
@@ -74,7 +76,8 @@ namespace VideoPlayerTest.Players
             {
                 IsMediaLoaded = false;
                 _mediaElement.Stop();
-                _mediaElement.Source = null;
+                //_mediaElement.Source = null;
+                _mediaElement.Close();
             }
         }
 
@@ -107,7 +110,7 @@ namespace VideoPlayerTest.Players
             //await _mediaElement.Play();
             //await _mediaElement.Pause();
             await _mediaElement.Seek(time);
-            Position = time; // To change Position property immediately after Seek
+            //Position = time; // To change Position property immediately after Seek
                              //
             //await _mediaElement.Play();
         }
