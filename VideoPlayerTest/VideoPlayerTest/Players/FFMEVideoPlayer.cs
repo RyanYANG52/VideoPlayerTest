@@ -61,7 +61,7 @@ namespace VideoPlayerTest.Players
 
         public override Task<bool> LoadMedia(string filePath)
         {
-            //UnloadMedia();
+            UnloadMedia();
             _loadTcs = null;
             _loadTcs = new TaskCompletionSource<bool>();
 
@@ -75,7 +75,7 @@ namespace VideoPlayerTest.Players
             if (IsMediaLoaded)
             {
                 IsMediaLoaded = false;
-                _mediaElement.Stop();
+                //_mediaElement.Stop();
                 //_mediaElement.Source = null;
                 _mediaElement.Close();
             }
